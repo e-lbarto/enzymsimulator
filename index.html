@@ -6,7 +6,7 @@
     <title>ENZYM-SIMULATOR v3</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="theme-dark">
     <div class="app-container" id="appContainer">
         <!-- Left Column: Simulation -->
         <div class="left-col">
@@ -26,11 +26,11 @@
             <div class="stats-bar">
                 <div class="stat-item">
                     <span>Reaktionen:</span>
-                    <span id="statReactions" class="stat-val" style="color: white;">0</span>
+                    <span id="statReactions" class="stat-val" style="color: var(--text-color);">0</span>
                 </div>
                 <div class="stat-item">
                     <span>Reaktionsgeschw.:</span>
-                    <span id="statRate" class="stat-val" style="color: var(--enz-active);">-</span>
+                    <span id="statRate" class="stat-val" style="color: var(--blue-color);">-</span>
                 </div>
                 <div class="stat-item">
                     <span>Substrat ♻:</span>
@@ -38,14 +38,24 @@
                 </div>
             </div>
 
-            <div class="panel" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px;">
-                <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-                    <span>⏱ SIM-SPEED:</span>
-                    <input type="range" id="speedSlider" min="0.1" max="2.6" step="0.1" value="1.0" style="width: 200px;">
+            <div class="panel" style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                        <span>⏱ SIM-SPEED:</span>
+                        <input type="range" id="speedSlider" min="0.1" max="2.6" step="0.1" value="1.0" style="width: 200px;">
+                    </div>
+                    <div class="checkbox-row" id="zoomCheckRow" style="margin: 0; color: var(--blue-color);">
+                        <div class="custom-checkbox" id="zoomCheckbox"></div>
+                        <span>[ ZOOM +30% ]</span>
+                    </div>
                 </div>
-                <div class="checkbox-row" id="zoomCheckRow" style="margin: 0; color: var(--blue-color);">
-                    <div class="custom-checkbox" id="zoomCheckbox"></div>
-                    <span>[ ZOOM +30% ]</span>
+                
+                <div class="theme-switch" id="themeSwitchRow">
+                    <span>🎨 DESIGN:</span>
+                    <div class="segmented-control">
+                        <button id="btnDark" class="active-dark">dunkel</button>
+                        <button id="btnPaper">hell</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -59,13 +69,13 @@
                 <div class="control-row">
                     <div class="control-label">🌡 Temperatur:</div>
                     <div class="control-slider-container">
-                        <input type="range" id="tempSlider" min="0" max="100" value="20">
+                        <input type="range" id="tempSlider" min="0" max="100" value="25">
                     </div>
                     <div class="control-input">
-                        <span id="tempValueDisplay" style="color: var(--accent-color); font-weight: bold;">20</span> °C
+                        <span id="tempValueDisplay" style="color: var(--accent-color); font-weight: bold;">25</span> °C
                     </div>
                 </div>
-                <div class="rgt-text" id="rgtText" style="color: var(--muted-color);">RGT-Faktor: 1.00x (Basis 20 °C)</div>
+                <div class="rgt-text" id="rgtText" style="color: var(--muted-color);">RGT-Faktor: 1.00x (Basis 25 °C)</div>
                 <div class="warning-text" id="denatWarning"></div>
 
                 <div class="hr-line"></div>
@@ -122,13 +132,17 @@
             <!-- Graph Panel -->
             <div class="panel" style="flex: 1; display: flex; flex-direction: column;">
                 <div class="panel-title" style="margin-bottom: 0;"><span class="mono-icon">&#x1F4CA;</span> Reaktionsgeschwindigkeit vs. Substratkonzentration</div>
-                <div class="graph-container">
+                <div class="graph-container" id="graphContainerObj">
                     <canvas id="graphCanvas"></canvas>
                     <div class="graph-overlay" id="graphOverlay">
                         [ SIMULATION STARTEN ]<br>> warte auf Messdaten...
                     </div>
                 </div>
                 <div class="graph-bottom-row">
+                    <div class="checkbox-row" id="kmCheckRow" style="margin: 0; color: var(--km-color); pointer-events: none; opacity: 0.5;">
+                        <div class="custom-checkbox" id="kmCheckbox"></div>
+                        <span>[ Km einblenden ]</span>
+                    </div>
                     <div class="checkbox-row" id="curveCheckRow" style="margin: 0; color: var(--blue-color);">
                         <div class="custom-checkbox" id="curveCheckbox"></div>
                         <span>[ Vmax + Kurve einblenden ]</span>

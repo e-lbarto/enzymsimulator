@@ -7,17 +7,14 @@ const ctx = canvas.getContext('2d');
 const graphCanvas = document.getElementById('graphCanvas');
 const gctx = graphCanvas.getContext('2d');
 
-// --- Colors from CSS ---
-const C_ENZ_A = '#58a6ff';
-const C_ENZ_B = '#3a75c4';
-const C_ENZ_D = '#8a8070';
-const C_SUB = '#fff200';
-const C_PROD = '#ff7b00';
-const C_GRID = '#0c3040';
+// --- Dynamic Color Fetching ---
+function getC(varName) {
+    return getComputedStyle(document.body).getPropertyValue(varName).trim();
+}
 
 // --- Simulation Constants ---
 const BASE_SPEED = 3.6;
-const BASE_TEMP = 20.0; // Basis 20°C in v3
+const BASE_TEMP = 25.0; // Basis 25°C in v3
 const DENATURE_NORMAL = 50;
 const DENATURE_THERMO = 80;
 let ENZYME_R = 25;
@@ -37,16 +34,18 @@ let initialSubstratesCount = 0;
 let scale = 1.0;
 
 let config = {
-    temp: 20,
+    temp: 25,
     numEnzymes: 4,
     numSubstrates: 100,
     thermostable: false,
     simSpeed: 1.0,
     showCurve: false,
+    showKm: false,
     zoom: false,
     hasSavedData: false,
     hasRecordedRate: false,
-    recordedRate: 0.0
+    recordedRate: 0.0,
+    theme: 'dark' // dark or paper
 };
 
 let dataPoints = []; // [s_cnt, rate, n_enz, temp]
@@ -62,8 +61,15 @@ function mmRate(s, n_enz, temp, thermo) {
     const tStart = tMid - 10;
     const tEnd = tMid + 10;
     let denatFrac = 0.0;
-    if (temp >= tEnd) denatFrac = 1.0;
-    else if (temp > tStart) denatFrac = (temp - tStart) / (tEnd - tStart);
+    
+    // Smooth denaturation curve like python
+    if (thermo) {
+        if (temp >= 90) denatFrac = 1.0;
+        else if (temp >= 70) denatFrac = (temp - 70) / 20.0;
+    } else {
+        if (temp >= 60) denatFrac = 1.0;
+        else if (temp >= 40) denatFrac = 0.25 + 0.75 * ((temp - 40) / 20.0);
+    }
     
     const activeEnz = n_enz * (1.0 - denatFrac);
     const vmax = activeEnz * 14.0 * fac;
@@ -73,7 +79,7 @@ function mmRate(s, n_enz, temp, thermo) {
     const effective_s = Math.min(s, 150.0);
     let v = vmax * effective_s / (km + effective_s);
     if (s > 190.0) {
-        const drop = 0.2 * (1.0 - Math.exp(-(s - 190.0) / 60.0));
+        const drop = 0.25 * (1.0 - Math.exp(-(s - 190.0) / 60.0));
         v *= (1.0 - drop);
     }
     return v;
@@ -116,17 +122,14 @@ class Enzyme extends Particle {
         super(x, y, Math.cos(ang) * spd, Math.sin(ang) * spd);
         this.bindingTimer = 0;
         this.denatured = false;
+        this.denatureThreshold = null;
         this.seed = Math.random();
     }
     
-    updateDenaturation(temp, thermo) {
+    checkDenaturation(remaining, temp, thermo) {
         if (this.denatured) return;
-        const tMid = thermo ? DENATURE_THERMO : DENATURE_NORMAL;
-        if (temp >= tMid + 10) {
+        if (this.denatureThreshold !== null && remaining <= this.denatureThreshold) {
             this.denatured = true;
-        } else if (temp > tMid - 10) {
-            const p = (temp - (tMid - 10)) / 20;
-            if (Math.random() < (p * p) * 0.02) this.denatured = true;
         }
     }
 
@@ -137,8 +140,8 @@ class Enzyme extends Particle {
         
         if (this.denatured) {
             ctx.beginPath();
-            ctx.fillStyle = C_ENZ_D;
-            ctx.strokeStyle = "#5a4f40";
+            ctx.fillStyle = getC('--enz-denat');
+            ctx.strokeStyle = getC('--enz-d-outline');
             ctx.lineWidth = 1.5;
             for (let i = 0; i < 14; i++) {
                 const t = (Math.PI * 2 * i) / 14;
@@ -150,7 +153,7 @@ class Enzyme extends Particle {
             ctx.closePath();
             ctx.fill(); ctx.stroke();
             ctx.beginPath();
-            ctx.strokeStyle = "#cc4444";
+            ctx.strokeStyle = getC('--error-color');
             ctx.lineWidth = 2.5;
             const s = r * 0.38;
             ctx.moveTo(-s, -s); ctx.lineTo(s, s);
@@ -158,8 +161,8 @@ class Enzyme extends Particle {
             ctx.stroke();
         } else {
             ctx.beginPath();
-            ctx.fillStyle = this.bindingTimer > 0 ? C_ENZ_B : C_ENZ_A;
-            ctx.strokeStyle = "#000";
+            ctx.fillStyle = this.bindingTimer > 0 ? getC('--enz-binding') : getC('--enz-active');
+            ctx.strokeStyle = getC('--enz-outline');
             ctx.lineWidth = 1.5;
             for(let i=0; i<=5; i++) {
                 const a = Math.PI - (Math.PI * 0.35) * (i/5);
@@ -185,7 +188,7 @@ class Enzyme extends Particle {
             ctx.fill(); ctx.stroke();
 
             if (this.bindingTimer > 0) {
-                drawSubstrateShape(ctx, 0, -r * 0.3, SUBSTRATE_R * 0.8, C_SUB);
+                drawSubstrateShape(ctx, 0, -r * 0.3, SUBSTRATE_R * 0.8, getC('--sub-color'));
             }
         }
         ctx.restore();
@@ -201,7 +204,7 @@ class Substrate extends Particle {
         this.reacted = false;
     }
     draw(ctx) {
-        drawSubstrateShape(ctx, this.x, this.y, SUBSTRATE_R, C_SUB);
+        drawSubstrateShape(ctx, this.x, this.y, SUBSTRATE_R, getC('--sub-color'));
     }
     move(factor, width, height, enzymes, remaining, padding) {
         let target = null;
@@ -245,7 +248,7 @@ class Product extends Particle {
             ctx.lineTo(hr * Math.cos(a), hr * Math.sin(a));
         }
         ctx.closePath();
-        ctx.fillStyle = C_PROD; ctx.strokeStyle = "#111"; ctx.lineWidth = 1;
+        ctx.fillStyle = getC('--prod-color'); ctx.strokeStyle = config.theme==='paper'?"#333":"#111"; ctx.lineWidth = 1;
         ctx.fill(); ctx.stroke();
         ctx.restore();
     }
@@ -260,9 +263,10 @@ function drawSubstrateShape(ctx, cx, cy, r, color) {
     const hr = r * 0.85;
     const hx1 = -hr * 0.95;
     const hx2 = hr * 0.95;
+    const outline = config.theme==='paper'?"#333":"#111";
     ctx.beginPath();
     ctx.moveTo(hx1, 0); ctx.lineTo(hx2, 0);
-    ctx.strokeStyle = "#111"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.strokeStyle = outline; ctx.lineWidth = 1.5; ctx.stroke();
     const drawHex = (x) => {
         ctx.beginPath();
         for (let i = 0; i < 6; i++) {
@@ -270,11 +274,50 @@ function drawSubstrateShape(ctx, cx, cy, r, color) {
             ctx.lineTo(x + hr * Math.cos(a), hr * Math.sin(a));
         }
         ctx.closePath();
-        ctx.fillStyle = color; ctx.strokeStyle = "#111"; ctx.lineWidth = 1;
+        ctx.fillStyle = color; ctx.strokeStyle = outline; ctx.lineWidth = 1;
         ctx.fill(); ctx.stroke();
     };
     drawHex(hx1); drawHex(hx2);
     ctx.restore();
+}
+
+// --- Denaturation Logistics ---
+function updateDenatThresholds() {
+    let denatFrac = 0;
+    let temp = config.temp;
+    let thermo = config.thermostable;
+    
+    if (thermo) {
+        if (temp >= 90) denatFrac = 1.0;
+        else if (temp >= 70) denatFrac = (temp - 70) / 20.0;
+    } else {
+        if (temp >= 60) denatFrac = 1.0;
+        else if (temp >= 40) denatFrac = 0.25 + 0.75 * ((temp - 40) / 20.0);
+    }
+    
+    let nEnz = enzymes.length;
+    if (nEnz === 0) return;
+    
+    let numToDenature = Math.round(nEnz * denatFrac);
+    for (let e of enzymes) {
+        e.denatureThreshold = null;
+        e.denatured = false;
+    }
+    
+    // Choose random enzymes to denature
+    let shuffled = [...enzymes].sort(() => 0.5 - Math.random());
+    let toDenature = shuffled.slice(0, numToDenature);
+    
+    let remaining = substrates.length;
+    if (remaining === 0) remaining = config.numSubstrates;
+    
+    for (let e of toDenature) {
+        if (temp >= (thermo ? 90 : 60)) {
+            e.denatureThreshold = Infinity;
+        } else {
+            e.denatureThreshold = Math.random() * (remaining - 4) + 4;
+        }
+    }
 }
 
 // --- App Control ---
@@ -295,17 +338,19 @@ function resetSim() {
     config.recordedRate = 0;
     
     document.getElementById('btnStart').innerHTML = "▶ START";
-    document.getElementById('btnStart').className = "btn btn-start";
     document.getElementById('graphOverlay').style.display = dataPoints.length ? "none" : "block";
 
     for (let i = 0; i < config.numEnzymes; i++) {
         let e = new Enzyme(Math.random() * canvas.width, Math.random() * canvas.height);
-        e.updateDenaturation(config.temp, config.thermostable);
         enzymes.push(e);
     }
     for (let i = 0; i < config.numSubstrates; i++) {
         substrates.push(new Substrate(Math.random() * canvas.width, Math.random() * canvas.height));
     }
+    
+    updateDenatThresholds();
+    enzymes.forEach(e => e.checkDenaturation(substrates.length, config.temp, config.thermostable));
+    
     updateStats();
     drawBeaker();
     drawGraph();
@@ -332,11 +377,13 @@ function loop(t) {
         const logicFac = rgtFactor(config.temp) * config.simSpeed;
         const dt = realDt * config.simSpeed;
         const ticks = realDt / 0.03; // Framerate independent ticks (1 tick = 30ms)
-        const moveFac = logicFac * ticks;
+        const moveFac = logicFac * Math.min(ticks, 3); // cap to avoid skipping
+        
+        let remaining = substrates.length;
         
         // Update Enzymes
         for (let e of enzymes) {
-            e.updateDenaturation(config.temp, config.thermostable);
+            e.checkDenaturation(remaining, config.temp, config.thermostable);
             if (e.bindingTimer > 0) {
                 e.bindingTimer -= ticks; // decrease based on real time passed
             } else {
@@ -345,7 +392,6 @@ function loop(t) {
         }
 
         // Update Substrates & Collisions
-        let remaining = substrates.length;
         let newRx = 0;
         
         for (let s of substrates) {
@@ -379,20 +425,19 @@ function loop(t) {
         // Record initial rate at 50% (Snapped perfectly to mathematical curve)
         if (!config.hasRecordedRate && (reactionsDone >= initialSubstratesCount * 0.5 || remaining === 0)) {
             if (accumulatedTime > 0) {
-                config.recordedRate = mmRate(initialSubstratesCount, config.numEnzymes, config.temp, config.thermostable);
+                config.recordedRate = reactionsDone / accumulatedTime; // Empirical rate
                 config.hasRecordedRate = true;
             }
         }
         
-        // At the very end of the simulation, push the recorded rate to the graph
+        // At the very end of the simulation, push the mathematically precise rate to the graph
         if (substrates.length === 0) {
             running = false;
-            document.getElementById('btnStart').innerHTML = "▶ START";
-            document.getElementById('btnStart').style.color = "var(--accent-color)";
-            document.getElementById('btnStart').style.borderColor = "var(--accent-color)";
+            document.getElementById('btnStart').innerHTML = "✓ FERTIG";
             
             if (config.hasRecordedRate && !config.hasSavedData) {
-                dataPoints.push([initialSubstratesCount, config.recordedRate, config.numEnzymes, config.temp]);
+                let theoryRate = mmRate(initialSubstratesCount, config.numEnzymes, config.temp, config.thermostable);
+                dataPoints.push([initialSubstratesCount, theoryRate, config.numEnzymes, config.temp]);
                 config.hasSavedData = true;
                 drawGraph();
             }
@@ -408,28 +453,36 @@ function loop(t) {
 function drawBeaker() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
+    // Water
+    ctx.fillStyle = getC('--water-bg');
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
     // Grid
-    ctx.strokeStyle = C_GRID; ctx.lineWidth = 1;
+    ctx.strokeStyle = getC('--grid-color'); ctx.lineWidth = 1;
     const gridSp = 20 * scale;
     ctx.beginPath();
     for (let x = 0; x <= canvas.width; x += gridSp) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
     for (let y = 0; y <= canvas.height; y += gridSp) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
     ctx.stroke();
+    
+    ctx.strokeStyle = getC('--thermo-ol');
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
     // Temp Text
     const tMid = config.thermostable ? DENATURE_THERMO : DENATURE_NORMAL;
-    ctx.fillStyle = config.temp > tMid - 10 ? "#f78166" : "#00ff00";
-    ctx.font = `bold ${Math.max(12, 14*scale)}px 'Courier New'`;
+    ctx.fillStyle = config.temp > tMid - 10 ? getC('--error-color') : getC('--text-color');
+    ctx.font = `bold ${Math.max(12, 14*scale)}px ${getC('--font-family')}`;
     ctx.textAlign = "left";
     ctx.fillText(`T = ${config.temp.toFixed(0)} °C`, 10*scale, 20*scale);
 
     // Thermometer
     const thX = canvas.width - 20*scale; const thY = 20*scale;
     const h = 40*scale;
-    ctx.fillStyle = "#0a1218"; ctx.strokeStyle = "#7ab2cc";
+    ctx.fillStyle = getC('--thermo-bg'); ctx.strokeStyle = getC('--thermo-ol');
     ctx.fillRect(thX - 3, thY, 6, h); ctx.strokeRect(thX - 3, thY, 6, h);
     const fillH = Math.min(h, Math.max(2, h * config.temp / 100));
-    ctx.fillStyle = config.temp > tMid - 10 ? "#f78166" : "#58a6ff";
+    ctx.fillStyle = config.temp > tMid - 10 ? getC('--error-color') : getC('--temp-cool');
     ctx.fillRect(thX - 2, thY + h - fillH, 4, fillH);
     ctx.beginPath(); ctx.arc(thX, thY + h + 4*scale, 6*scale, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
@@ -441,12 +494,16 @@ function drawBeaker() {
 
 function drawGraph() {
     gctx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+    
+    gctx.fillStyle = getC('--graph-bg');
+    gctx.fillRect(0, 0, graphCanvas.width, graphCanvas.height);
+    
     const w = graphCanvas.width; const h = graphCanvas.height;
     const pl = 65, pr = 20, pt = 25, pb = 55;
     const gw = w - pl - pr; const gh = h - pt - pb;
 
     // Background Grid
-    gctx.strokeStyle = "#1e2530"; gctx.lineWidth = 1;
+    gctx.strokeStyle = getC('--grid-color'); gctx.lineWidth = 1;
     gctx.beginPath();
     for(let i=1; i<4; i++) {
         let y = pt + gh * i / 4; gctx.moveTo(pl, y); gctx.lineTo(pl + gw, y);
@@ -455,13 +512,13 @@ function drawGraph() {
     gctx.stroke();
 
     // Axes
-    gctx.strokeStyle = "#4a7559"; gctx.lineWidth = 2;
+    gctx.strokeStyle = getC('--muted-color'); gctx.lineWidth = 2;
     gctx.beginPath();
     gctx.moveTo(pl, pt); gctx.lineTo(pl, pt + gh); gctx.lineTo(pl + gw, pt + gh);
     gctx.stroke();
 
     // Labels
-    gctx.fillStyle = "#4a7559"; gctx.font = "bold 16px 'Courier New'";
+    gctx.fillStyle = getC('--muted-color'); gctx.font = `14px ${getC('--font-family')}`;
     gctx.textAlign = "center";
     gctx.fillText("Substratkonzentration [S]", pl + gw/2, h - 12);
     
@@ -484,7 +541,8 @@ function drawGraph() {
     let globalMaxVmax = Object.values(vmaxDict).length ? Math.max(...Object.values(vmaxDict)) : 0;
     let maxR = Math.max(globalMaxVmax * 1.15, 0.5);
 
-    const curveColors = ["#58a6ff", "#ff4040", "#00ff00", "#ff00ff", "#fff200", "#00ffff"];
+    const curveColorsStr = getC('--curve-colors');
+    const curveColors = curveColorsStr ? curveColorsStr.split(',').map(s=>s.trim()) : ["#58a6ff", "#f78166", "#3fb950", "#d2a8ff", "#e3b341", "#8abeb7"];
 
     if (config.showCurve) {
         const steps = 200;
@@ -493,6 +551,8 @@ function drawGraph() {
             const col = curveColors[idx % curveColors.length];
             const ptsForCfg = dataPoints.filter(p => p[2] === ne && p[3] === t);
             const maxSim = ptsForCfg.length ? Math.max(...ptsForCfg.map(p => p[0])) : 0;
+            const vmaxVal = vmaxDict[`${ne},${t}`];
+            const maxRate = ptsForCfg.length ? Math.max(...ptsForCfg.map(p => p[1])) : 0;
             
             if (maxSim > 0) {
                 gctx.beginPath();
@@ -508,12 +568,29 @@ function drawGraph() {
             }
 
             // Vmax line
-            const vmaxVal = vmaxDict[`${ne},${t}`];
-            const vy = pt + gh - Math.min(vmaxVal / maxR, 1.0) * gh;
-            gctx.beginPath(); gctx.setLineDash([6, 4]); gctx.moveTo(pl, vy); gctx.lineTo(pl + gw, vy);
-            gctx.strokeStyle = col; gctx.lineWidth = 2; gctx.stroke(); gctx.setLineDash([]);
-            gctx.fillStyle = col; gctx.textAlign = "right"; gctx.font = "bold 18px Arial";
-            gctx.fillText(`V_max (${ne}E, ${t.toFixed(0)}°C)`, pl + gw - 4, vy - 8);
+            if (maxRate >= vmaxVal * 0.97) {
+                const vy = pt + gh - Math.min(vmaxVal / maxR, 1.0) * gh;
+                gctx.beginPath(); gctx.setLineDash([6, 4]); gctx.moveTo(pl, vy); gctx.lineTo(pl + gw, vy);
+                gctx.strokeStyle = col; gctx.lineWidth = 2; gctx.stroke(); gctx.setLineDash([]);
+                gctx.fillStyle = col; gctx.textAlign = "right"; gctx.font = `12px ${getC('--font-family')}`;
+                gctx.fillText(`V_max (${ne}E, ${t.toFixed(0)}°C)`, pl + gw - 4, vy - 8);
+                
+                if (config.showKm) {
+                    const kmVal = 20.0;
+                    const kmX = pl + (kmVal / maxS) * gw;
+                    const vyHalf = pt + gh - Math.min((vmaxVal/2) / maxR, 1.0) * gh;
+                    const kmCol = getC('--km-color');
+                    
+                    gctx.beginPath(); gctx.setLineDash([2, 2]);
+                    gctx.moveTo(pl, vyHalf); gctx.lineTo(kmX, vyHalf);
+                    gctx.lineTo(kmX, pt + gh);
+                    gctx.strokeStyle = kmCol; gctx.lineWidth = 1.5; gctx.stroke(); gctx.setLineDash([]);
+                    gctx.fillStyle = kmCol; gctx.textAlign = "right";
+                    gctx.fillText("V_max/2", pl - 4, vyHalf + 4);
+                    gctx.textAlign = "center";
+                    gctx.fillText("K_m", kmX, pt + gh + 14);
+                }
+            }
         });
     }
 
@@ -526,14 +603,14 @@ function drawGraph() {
             let idx = configs.findIndex(c => c[0] === ne && c[1] === t);
             let col = curveColors[idx % curveColors.length];
             gctx.beginPath(); gctx.arc(x, y, 4, 0, Math.PI * 2);
-            gctx.fillStyle = col; gctx.fill(); gctx.strokeStyle = "#fff"; gctx.lineWidth = 1; gctx.stroke();
+            gctx.fillStyle = col; gctx.fill(); gctx.strokeStyle = getC('--bg-color'); gctx.lineWidth = 1.5; gctx.stroke();
         });
     } else {
         document.getElementById('graphOverlay').style.display = 'block';
     }
 
-    gctx.fillStyle = "#4a7559"; gctx.textAlign = "center";
-    gctx.font = "bold 16px 'Courier New'";
+    gctx.fillStyle = getC('--muted-color'); gctx.textAlign = "center";
+    gctx.font = `12px ${getC('--font-family')}`;
     gctx.fillText("0", pl, pt + gh + 22);
     gctx.fillText(Math.floor(maxS).toString(), pl + gw, pt + gh + 22);
     gctx.textAlign = "right";
@@ -543,7 +620,7 @@ function drawGraph() {
 // --- UI Binding ---
 function updateUI() {
     const f = rgtFactor(config.temp);
-    document.getElementById('rgtText').textContent = `RGT-Faktor: ${f.toFixed(2)}x (Basis 20 °C)`;
+    document.getElementById('rgtText').textContent = `RGT-Faktor: ${f.toFixed(2)}x (Basis 25 °C)`;
     
     const tMid = config.thermostable ? DENATURE_THERMO : DENATURE_NORMAL;
     const warn = document.getElementById('denatWarning');
@@ -556,7 +633,8 @@ function updateUI() {
     document.getElementById('enzDisplay').textContent = config.numEnzymes;
     document.getElementById('subDisplay').textContent = config.numSubstrates;
     
-    enzymes.forEach(e => e.updateDenaturation(config.temp, config.thermostable));
+    updateDenatThresholds();
+    enzymes.forEach(e => e.checkDenaturation(substrates.length, config.temp, config.thermostable));
     drawBeaker(); drawGraph();
 }
 
@@ -605,7 +683,21 @@ document.getElementById('thermoCheckRow').onclick = () => toggleCheck('thermoChe
     updateUI();
 });
 
-document.getElementById('curveCheckRow').onclick = () => toggleCheck('curveCheckbox', 'showCurve', drawGraph);
+document.getElementById('curveCheckRow').onclick = () => toggleCheck('curveCheckbox', 'showCurve', () => {
+    if (config.showCurve) {
+        document.getElementById('kmCheckRow').style.pointerEvents = 'auto';
+        document.getElementById('kmCheckRow').style.opacity = '1.0';
+    } else {
+        document.getElementById('kmCheckRow').style.pointerEvents = 'none';
+        document.getElementById('kmCheckRow').style.opacity = '0.5';
+        if (config.showKm) toggleCheck('kmCheckbox', 'showKm');
+    }
+    drawGraph();
+});
+
+document.getElementById('kmCheckRow').onclick = () => {
+    if (config.showCurve) toggleCheck('kmCheckbox', 'showKm', drawGraph);
+};
 
 document.getElementById('zoomCheckRow').onclick = () => toggleCheck('zoomCheckbox', 'zoom', () => {
     scale = config.zoom ? 1.3 : 1.0;
@@ -615,6 +707,27 @@ document.getElementById('zoomCheckRow').onclick = () => toggleCheck('zoomCheckbo
     updateCanvasSize();
     resetSim();
 });
+
+// Theme Switcher Logic
+function applyTheme(themeName) {
+    config.theme = themeName;
+    document.body.className = "theme-" + themeName;
+    if (themeName === 'dark') {
+        document.getElementById('btnDark').classList.add('active-dark');
+        document.getElementById('btnPaper').classList.remove('active-paper');
+    } else {
+        document.getElementById('btnDark').classList.remove('active-dark');
+        document.getElementById('btnPaper').classList.add('active-paper');
+    }
+    // Need small delay for layout/css updates before redrawing canvas
+    setTimeout(() => {
+        drawBeaker();
+        drawGraph();
+    }, 50);
+}
+
+document.getElementById('btnDark').onclick = () => applyTheme('dark');
+document.getElementById('btnPaper').onclick = () => applyTheme('paper');
 
 document.getElementById('btnStart').onclick = () => {
     running = !running;
@@ -627,10 +740,8 @@ document.getElementById('btnStart').onclick = () => {
         }
         lastTickTime = performance.now();
         btn.innerHTML = "⏸ PAUSE";
-        btn.style.color = "#ffcc00"; btn.style.borderColor = "#ffcc00";
     } else {
         btn.innerHTML = "▶ WEITER";
-        btn.style.color = "var(--accent-color)"; btn.style.borderColor = "var(--accent-color)";
     }
 };
 
