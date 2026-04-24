@@ -699,14 +699,7 @@ document.getElementById('kmCheckRow').onclick = () => {
     if (config.showCurve) toggleCheck('kmCheckbox', 'showKm', drawGraph);
 };
 
-document.getElementById('zoomCheckRow').onclick = () => toggleCheck('zoomCheckbox', 'zoom', () => {
-    scale = config.zoom ? 1.3 : 1.0;
-    ENZYME_R = 25 * scale;
-    SUBSTRATE_R = 8 * scale;
-    COLL_DIST = ENZYME_R + SUBSTRATE_R + 8 * scale;
-    updateCanvasSize();
-    resetSim();
-});
+
 
 // Theme Switcher Logic
 function applyTheme(themeName) {
