@@ -33,6 +33,7 @@ let lastTickTime = 0;
 let initialSubstratesCount = 0;
 let scale = 1.0;
 let finishTimer = 0; // Timer for 1s cooldown after completion
+let graphHitRegions = []; // For Km/Vmax tooltips
 
 let config = {
     temp: 25,
@@ -507,6 +508,8 @@ function drawGraph() {
     const w = graphCanvas.width; const h = graphCanvas.height;
     const pl = 65, pr = 20, pt = 25, pb = 55;
     const gw = w - pl - pr; const gh = h - pt - pb;
+    
+    graphHitRegions = [];
 
     // Background Grid
     gctx.strokeStyle = getC('--grid-color'); gctx.lineWidth = 1;
@@ -581,6 +584,12 @@ function drawGraph() {
                 gctx.fillStyle = col; gctx.textAlign = "right"; gctx.font = `12px ${getC('--font-family')}`;
                 gctx.fillText(`V_max (${ne}E, ${t.toFixed(0)}°C)`, pl + gw - 4, vy - 8);
                 
+                // Hit region for Vmax
+                graphHitRegions.push({
+                    x: pl, y: vy - 15, w: gw, h: 25,
+                    text: `<b>V<sub>max</sub> ≈ ${vmaxVal.toFixed(2)}</b> [Produkte/s]<br><small>(${ne} Enzyme, ${t.toFixed(0)}°C)</small>`
+                });
+                
                 if (config.showKm) {
                     const kmVal = 20.0;
                     const kmX = pl + (kmVal / maxS) * gw;
@@ -595,6 +604,16 @@ function drawGraph() {
                     gctx.fillText("V_max/2", pl - 4, vyHalf + 4);
                     gctx.textAlign = "center";
                     gctx.fillText("K_m", kmX, pt + gh + 14);
+
+                    // Hit regions for Km
+                    graphHitRegions.push({
+                        x: kmX - 15, y: vyHalf, w: 30, h: (pt + gh) - vyHalf + 20,
+                        text: `<b>K<sub>m</sub> = ${kmVal.toFixed(1)}</b> [Substrat]<br><small>Konzentration bei V<sub>max</sub>/2</small>`
+                    });
+                    graphHitRegions.push({
+                        x: pl - 50, y: vyHalf - 10, w: 50, h: 20,
+                        text: `<b>V<sub>max</sub> / 2 ≈ ${(vmaxVal/2).toFixed(2)}</b>`
+                    });
                 }
             }
         });
@@ -809,4 +828,37 @@ mainTitle.addEventListener('mousemove', (e) => {
 
 mainTitle.addEventListener('mouseleave', () => {
     tooltip.style.display = 'none';
+});
+
+// --- Graph Tooltip Logic ---
+graphCanvas.addEventListener('mousemove', (e) => {
+    const rect = graphCanvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    
+    let found = null;
+    // Search backwards to get the top-most (newest) region
+    for (let i = graphHitRegions.length - 1; i >= 0; i--) {
+        const r = graphHitRegions[i];
+        if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h) {
+            found = r;
+            break;
+        }
+    }
+    
+    if (found) {
+        tooltip.innerHTML = found.text;
+        tooltip.style.display = 'block';
+        tooltip.style.left = (e.pageX + 15) + 'px';
+        tooltip.style.top = (e.pageY + 15) + 'px';
+        graphCanvas.style.cursor = 'help';
+    } else {
+        tooltip.style.display = 'none';
+        graphCanvas.style.cursor = 'default';
+    }
+});
+
+graphCanvas.addEventListener('mouseleave', () => {
+    tooltip.style.display = 'none';
+    graphCanvas.style.cursor = 'default';
 });
