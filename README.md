@@ -60,4 +60,6 @@ Die Web-Version läuft vollständig lokal im Browser und benötigt keinen Backen
 ---
 
 ## 📝 Lizenz
-Dieses Projekt dient Bildungs- und Visualisierungszwecken. (Füge hier deine Lizenz ein, standardmäßig MIT).
+Dieses Projekt dient Bildungs- und Visualisierungszwecken. (MIT). 
+
+2026 von mp & Antigravity
