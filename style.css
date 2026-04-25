@@ -224,10 +224,10 @@ h1 {
 }
 
 .control-input {
-    width: 60px;
-    text-align: right;
+    width: 80px;
+    text-align: left;
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
     align-items: center;
 }
 
@@ -240,6 +240,25 @@ h1 {
     text-align: center;
     padding: 2px;
     margin-left: 8px;
+}
+
+.slider-btn {
+    background: var(--btn-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    width: 24px;
+    height: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: inherit;
+    transition: background 0.2s;
+}
+
+.slider-btn:hover {
+    background: var(--btn-hover);
 }
 
 /* Sliders */
@@ -453,11 +472,18 @@ input[type=range]::-webkit-slider-thumb {
     background: var(--panel-bg);
     border: 1px solid var(--border-color);
     color: var(--text-color);
-    padding: 4px 8px;
-    font-size: 12px;
+    padding: 8px 12px;
+    font-size: 13px;
+    line-height: 1.5;
     pointer-events: none;
     display: none;
     z-index: 100;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    border-radius: 4px;
+}
+
+#mainTitle {
+    cursor: help;
 }
 
 .mono-icon {

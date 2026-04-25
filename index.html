@@ -13,7 +13,7 @@
             <div class="header-area">
                 <div class="title-container">
                     <div class="logo-icon"></div>
-                    <h1>ENZYM-SIMULATOR</h1>
+                    <h1 id="mainTitle" data-tooltip="m.poehl & Antigravity (2026)<br>Lizenz: MIT License">ENZYM-SIMULATOR</h1>
                 </div>
                 <div class="subtitle">&nbsp;&nbsp;Substratkonzentration · Michaelis-Menten-Kinetik</div>
                 <div class="divider"></div>
@@ -65,10 +65,14 @@
                 <div class="control-row">
                     <div class="control-label">🌡 Temperatur:</div>
                     <div class="control-slider-container">
+                        <button class="slider-btn" id="btnTempMinus">-</button>
                         <input type="range" id="tempSlider" min="0" max="100" value="25">
+                        <button class="slider-btn" id="btnTempPlus">+</button>
                     </div>
                     <div class="control-input">
-                        <span id="tempValueDisplay" style="color: var(--accent-color); font-weight: bold;">25</span> °C
+                        <span id="tempValueDisplay" style="color: var(--accent-color); font-weight: bold; display:none;">25</span>
+                        <input type="text" id="tempInput" class="input-box" value="25">
+                        <span style="margin-left: 4px;">°C</span>
                     </div>
                 </div>
                 <div class="rgt-text" id="rgtText" style="color: var(--muted-color);">RGT-Faktor: 1.00x (Basis 25 °C)</div>
@@ -79,10 +83,12 @@
                 <div class="control-row">
                     <div class="control-label">🧬 Enzyme:</div>
                     <div class="control-slider-container">
+                        <button class="slider-btn" id="btnEnzMinus">-</button>
                         <input type="range" id="enzSlider" min="1" max="20" value="4">
+                        <button class="slider-btn" id="btnEnzPlus">+</button>
                     </div>
                     <div class="control-input">
-                        <span style="color: var(--accent-color); font-weight: bold;" id="enzDisplay">4</span>
+                        <span style="color: var(--accent-color); font-weight: bold; display:none;" id="enzDisplay">4</span>
                         <input type="text" id="enzInput" class="input-box" value="4">
                     </div>
                 </div>
@@ -92,10 +98,12 @@
                 <div class="control-row">
                     <div class="control-label">🟡 Substrate:</div>
                     <div class="control-slider-container">
+                        <button class="slider-btn" id="btnSubMinus">-</button>
                         <input type="range" id="subSlider" min="1" max="200" value="100">
+                        <button class="slider-btn" id="btnSubPlus">+</button>
                     </div>
                     <div class="control-input">
-                        <span style="color: var(--accent-color); font-weight: bold;" id="subDisplay">100</span>
+                        <span style="color: var(--accent-color); font-weight: bold; display:none;" id="subDisplay">100</span>
                         <input type="text" id="subInput" class="input-box" value="100">
                     </div>
                 </div>
@@ -127,7 +135,7 @@
 
             <!-- Graph Panel -->
             <div class="panel" style="flex: 1; display: flex; flex-direction: column;">
-                <div class="panel-title" style="margin-bottom: 0;"><span class="mono-icon">&#x1F4CA;</span> Reaktionsgeschwindigkeit vs. Substratkonzentration</div>
+                <div class="panel-title" style="margin-bottom: 0;"><span class="mono-icon">📊&#xFE0E;</span> Michaelis-Menten-Diagramm</div>
                 <div class="graph-container" id="graphContainerObj">
                     <canvas id="graphCanvas"></canvas>
                     <div class="graph-overlay" id="graphOverlay">

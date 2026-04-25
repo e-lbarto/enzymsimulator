@@ -628,6 +628,10 @@ function updateUI() {
     else if (config.temp > tMid - 10) warn.textContent = "⚠ Enzyme denaturieren zunehmend!";
     else warn.textContent = "";
 
+    document.getElementById('tempInput').value = config.temp;
+    document.getElementById('tempValueDisplay').textContent = config.temp;
+    document.getElementById('tempSlider').value = config.temp;
+    
     document.getElementById('enzInput').value = config.numEnzymes;
     document.getElementById('subInput').value = config.numSubstrates;
     document.getElementById('enzDisplay').textContent = config.numEnzymes;
@@ -640,17 +644,26 @@ function updateUI() {
 
 document.getElementById('tempSlider').addEventListener('input', e => {
     config.temp = parseFloat(e.target.value);
-    document.getElementById('tempValueDisplay').textContent = config.temp;
+    updateUI();
+});
+
+document.getElementById('tempInput').addEventListener('change', e => {
+    config.temp = Math.max(0, Math.min(100, parseFloat(e.target.value) || 25));
+    updateUI();
+});
+
+document.getElementById('btnTempMinus').addEventListener('click', () => {
+    config.temp = Math.max(0, config.temp - 1);
+    updateUI();
+});
+
+document.getElementById('btnTempPlus').addEventListener('click', () => {
+    config.temp = Math.min(100, config.temp + 1);
     updateUI();
 });
 
 document.getElementById('enzSlider').addEventListener('input', e => {
     config.numEnzymes = parseInt(e.target.value);
-    updateUI(); if(!running) resetSim();
-});
-
-document.getElementById('subSlider').addEventListener('input', e => {
-    config.numSubstrates = parseInt(e.target.value);
     updateUI(); if(!running) resetSim();
 });
 
@@ -660,8 +673,37 @@ document.getElementById('enzInput').addEventListener('change', e => {
     updateUI(); if(!running) resetSim();
 });
 
+document.getElementById('btnEnzMinus').addEventListener('click', () => {
+    let val = Math.max(1, config.numEnzymes - 1);
+    config.numEnzymes = val; document.getElementById('enzSlider').value = val;
+    updateUI(); if(!running) resetSim();
+});
+
+document.getElementById('btnEnzPlus').addEventListener('click', () => {
+    let val = Math.min(20, config.numEnzymes + 1);
+    config.numEnzymes = val; document.getElementById('enzSlider').value = val;
+    updateUI(); if(!running) resetSim();
+});
+
+document.getElementById('subSlider').addEventListener('input', e => {
+    config.numSubstrates = parseInt(e.target.value);
+    updateUI(); if(!running) resetSim();
+});
+
 document.getElementById('subInput').addEventListener('change', e => {
     let val = Math.max(1, Math.min(200, parseInt(e.target.value) || 100));
+    config.numSubstrates = val; document.getElementById('subSlider').value = val;
+    updateUI(); if(!running) resetSim();
+});
+
+document.getElementById('btnSubMinus').addEventListener('click', () => {
+    let val = Math.max(1, config.numSubstrates - 1);
+    config.numSubstrates = val; document.getElementById('subSlider').value = val;
+    updateUI(); if(!running) resetSim();
+});
+
+document.getElementById('btnSubPlus').addEventListener('click', () => {
+    let val = Math.min(200, config.numSubstrates + 1);
     config.numSubstrates = val; document.getElementById('subSlider').value = val;
     updateUI(); if(!running) resetSim();
 });
@@ -743,3 +785,22 @@ document.getElementById('btnGraphClear').onclick = () => { dataPoints = []; draw
 
 // Start
 init();
+
+// --- Tooltip Logic ---
+const tooltip = document.getElementById('tooltip');
+const mainTitle = document.getElementById('mainTitle');
+
+mainTitle.addEventListener('mouseenter', (e) => {
+    const text = mainTitle.getAttribute('data-tooltip');
+    tooltip.innerHTML = text;
+    tooltip.style.display = 'block';
+});
+
+mainTitle.addEventListener('mousemove', (e) => {
+    tooltip.style.left = (e.pageX + 15) + 'px';
+    tooltip.style.top = (e.pageY + 15) + 'px';
+});
+
+mainTitle.addEventListener('mouseleave', () => {
+    tooltip.style.display = 'none';
+});
