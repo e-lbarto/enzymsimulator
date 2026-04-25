@@ -32,6 +32,7 @@ let accumulatedTime = 0.0;
 let lastTickTime = 0;
 let initialSubstratesCount = 0;
 let scale = 1.0;
+let finishTimer = 0; // Timer for 1s cooldown after completion
 
 let config = {
     temp: 25,
@@ -333,6 +334,7 @@ function resetSim() {
     running = false;
     enzymes = []; substrates = []; products = [];
     reactionsDone = 0; winTime = 0.0; accumulatedTime = 0.0; lastTickTime = 0;
+    finishTimer = 0;
     config.hasSavedData = false;
     config.hasRecordedRate = false;
     config.recordedRate = 0;
@@ -430,16 +432,20 @@ function loop(t) {
             }
         }
         
-        // At the very end of the simulation, push the mathematically precise rate to the graph
+        // At the very end of the simulation, wait 1 second before stopping
         if (substrates.length === 0) {
-            running = false;
-            document.getElementById('btnStart').innerHTML = "✓ FERTIG";
+            finishTimer += realDt;
             
-            if (config.hasRecordedRate && !config.hasSavedData) {
-                let theoryRate = mmRate(initialSubstratesCount, config.numEnzymes, config.temp, config.thermostable);
-                dataPoints.push([initialSubstratesCount, theoryRate, config.numEnzymes, config.temp]);
-                config.hasSavedData = true;
-                drawGraph();
+            if (finishTimer >= 1.0) {
+                running = false;
+                document.getElementById('btnStart').innerHTML = "✓ FERTIG";
+                
+                if (config.hasRecordedRate && !config.hasSavedData) {
+                    let theoryRate = mmRate(initialSubstratesCount, config.numEnzymes, config.temp, config.thermostable);
+                    dataPoints.push([initialSubstratesCount, theoryRate, config.numEnzymes, config.temp]);
+                    config.hasSavedData = true;
+                    drawGraph();
+                }
             }
         }
         
