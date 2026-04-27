@@ -18,7 +18,7 @@ Die Simulation läuft auch vollständig als **Single-File Web App** im Browser.
 - **Benutzerdefinierte Parameter**: Anzahl der Enzyme und initiale Substratkonzentration frei wählbar.
 - **Theme-Unterstützung**: Nahtloser Wechsel zwischen zwei optischen Aufmachungen:
   - 🌙 **Dunkel**: Ein präzises "Labor-/Matrix-Neon"-Design.
-  - 📄 **Hell**: Ein organischer "Papier & Skizzen"-Stil für einen handgezeichneten Look.
+  - 📄 **Hell**: Ein heller Look.
 - **Zoom & Sim-Speed**: Simulation kann beschleunigt, verlangsamt und für bessere Sichtbarkeit herangezoomt werden (Diagramm-Zoom per Klick).
 
 ---
