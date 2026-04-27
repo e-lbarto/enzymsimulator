@@ -22,6 +22,20 @@
             <div style="position: relative;">
                 <canvas id="beakerCanvas"></canvas>
             </div>
+
+            <div class="legend-area" style="margin-top: 8px; margin-bottom: 8px; font-size: 0.8rem; color: var(--muted-color); display: flex; flex-direction: column; gap: 4px; padding-left: 20px; align-items: flex-start;">
+                <div class="legend-row" style="display: flex; gap: 12px; align-items: center;">
+                    <span style="font-weight: bold; width: 70px; text-align: left;">Legende:</span>
+                    <div class="legend-item"><div class="color-box" style="background: var(--enz-active);"></div> Enzym</div>
+                    <div class="legend-item"><div class="color-box" style="background: var(--sub-color);"></div> Substrat</div>
+                    <div class="legend-item"><div class="color-box" style="background: var(--prod-color);"></div> Produkt</div>
+                </div>
+                <div class="legend-row" id="inhibitorLegend" style="display: flex; gap: 12px; align-items: center;">
+                    <span style="width: 70px;"></span> 
+                    <div class="legend-item"><div class="color-box" style="background: var(--inh-comp);"></div> komp. Hemmstoff</div>
+                    <div class="legend-item"><div class="color-box" style="background: var(--inh-allo);"></div> allost. Hemmstoff</div>
+                </div>
+            </div>
             
             <div class="stats-bar">
                 <div class="stat-item">
@@ -46,11 +60,20 @@
                     </div>
                 </div>
                 
-                <div class="theme-switch" id="themeSwitchRow">
-                    <span>🎨 DESIGN:</span>
-                    <div class="segmented-control">
-                        <button id="btnDark" class="active-dark">dunkel</button>
-                        <button id="btnPaper">hell</button>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <div class="theme-switch" id="themeSwitchRow" style="margin: 0;">
+                        <span>DESIGN:</span>
+                        <div class="segmented-control">
+                            <button id="btnDark" class="active-dark">dunkel</button>
+                            <button id="btnPaper">hell</button>
+                        </div>
+                    </div>
+                    <div class="theme-switch" id="inhibSwitchRow" style="margin: 0;">
+                        <span>HEMMUNG:</span>
+                        <div class="segmented-control">
+                            <button id="btnInhibOn" class="active-dark">An</button>
+                            <button id="btnInhibOff">Aus</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -110,6 +133,25 @@
 
                 <div class="hr-line"></div>
 
+                <div id="inhibitorGroup">
+                    <div class="control-row">
+                        <div class="control-label" style="color: var(--pink-color);">Hemmstoff:</div>
+                        <div style="flex: 1; display: flex; align-items: center; padding: 0 10px; gap: 8px;">
+                            <button id="btnInhibType" class="btn" style="flex: 1; padding: 2px 4px; font-size: 0.75rem; justify-content: center; height: 26px; background: var(--accent-color); color: var(--bg-color); border: none;">Kompetitiv</button>
+                            <div style="flex: 1; display: flex; align-items: center; gap: 4px;">
+                                <button class="slider-btn" id="btnInhMinus" style="width: 20px; height: 20px;">-</button>
+                                <input type="range" id="inhSlider" min="0" max="50" value="20" style="width: 100%;">
+                                <button class="slider-btn" id="btnInhPlus" style="width: 20px; height: 20px;">+</button>
+                            </div>
+                        </div>
+                        <div class="control-input">
+                            <input type="text" id="inhInput" class="input-box" value="20">
+                        </div>
+                    </div>
+
+                    <div class="hr-line"></div>
+                </div>
+
                 <div class="checkbox-row" id="thermoCheckRow">
                     <div class="custom-checkbox" id="thermoCheckbox"></div>
                     <span style="display:flex; align-items: center; gap: 8px;">
@@ -123,19 +165,14 @@
                     <button id="btnReset" class="btn btn-reset">⟳ RESET</button>
                     <button id="btnGraphClear" class="btn btn-graph">🗑 GRAPH ×</button>
                 </div>
-
-                <div class="legend-row">
-                    <span>Legende:</span>
-                    <div class="legend-item"><div class="color-box" style="background: var(--enz-active);"></div> aktives Enzym</div>
-                    <div class="legend-item"><div class="color-box" style="background: var(--enz-denat);"></div> denaturiert</div>
-                    <div class="legend-item"><div class="color-box" style="background: var(--sub-color);"></div> Substrat</div>
-                    <div class="legend-item"><div class="color-box" style="background: var(--prod-color);"></div> Produkt</div>
-                </div>
             </div>
 
             <!-- Graph Panel -->
             <div class="panel" style="flex: 1; display: flex; flex-direction: column;">
-                <div class="panel-title" style="margin-bottom: 0;"><span class="mono-icon">📊&#xFE0E;</span> Michaelis-Menten-Diagramm</div>
+                <div class="panel-title" style="margin-bottom: 0;">
+                    <span class="mono-icon">📊&#xFE0E;</span> Michaelis-Menten-Diagramm
+                    <span style="color: var(--muted-color); font-size: 0.75rem; font-weight: normal; margin-left: 10px; font-family: var(--font-family);">(Klick --> Zoom)</span>
+                </div>
                 <div class="graph-container" id="graphContainerObj">
                     <canvas id="graphCanvas"></canvas>
                     <div class="graph-overlay" id="graphOverlay">
@@ -156,6 +193,32 @@
         </div>
     </div>
     
+    <div id="zoomOverlay" class="zoom-overlay">
+        <div class="zoom-modal">
+            <button class="zoom-close" id="btnZoomClose">×</button>
+            <div class="panel-title" style="margin-bottom: 8px;">
+                <span class="mono-icon">📊&#xFE0E;</span> Michaelis-Menten-Diagramm
+                <span style="color: var(--muted-color); font-size: 0.75rem; font-weight: normal; margin-left: 10px; font-family: var(--font-family);">(Klick --> Zoom)</span>
+            </div>
+            <div class="graph-container" style="height: calc(100% - 80px); margin-top: 0; width: 100%;">
+                <canvas id="zoomCanvas"></canvas>
+                <div class="graph-overlay" id="zoomGraphOverlay" style="display: none;">
+                    [ SIMULATION STARTEN ]<br>> warte auf Messdaten...
+                </div>
+            </div>
+            <div class="graph-bottom-row" style="margin-top: 10px;">
+                <div class="checkbox-row" id="zoomKmCheckRow" style="margin: 0; color: var(--km-color); pointer-events: none; opacity: 0.5;">
+                    <div class="custom-checkbox" id="zoomKmCheckbox"></div>
+                    <span>[ Km einblenden ]</span>
+                </div>
+                <div class="checkbox-row" id="zoomCurveCheckRow" style="margin: 0; color: var(--blue-color);">
+                    <div class="custom-checkbox" id="zoomCurveCheckbox"></div>
+                    <span>[ Vmax + Kurve einblenden ]</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="tooltip"></div>
 
     <script src="script.js"></script>

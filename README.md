@@ -1,10 +1,8 @@
 # ⚗️ Enzym-Simulator (Michaelis-Menten-Kinetik)
 
-Ein interaktiver Simulator zur Visualisierung der Enzymaktivität und Abhängigkeit von der Substratkonzentration. Dieses Projekt demonstriert anschaulich die Prinzipien der **Michaelis-Menten-Kinetik** sowie den Einfluss von Temperatur und Sättigung auf die Reaktionsgeschwindigkeit.
+Ein interaktiver Simulator zur Visualisierung der Enzymaktivität und Abhängigkeit von der Substratkonzentration. Dieses Projekt demonstriert anschaulich die Prinzipien der **Michaelis-Menten-Kinetik** sowie den Einfluss von Temperatur, Hemmstoffen und Sättigung auf die Reaktionsgeschwindigkeit.
 
-Das Projekt ist in **zwei Versionen** verfügbar:
-1. **Python Desktop App** (mit `tkinter`)
-2. **Web App** (mit Vanilla HTML/CSS/JavaScript)
+Die Simulation läuft auch vollständig als **Single-File Web App** im Browser.
 
 ---
 
@@ -12,6 +10,7 @@ Das Projekt ist in **zwei Versionen** verfügbar:
 
 - **Live-Simulation**: Visualisiert thermische Bewegung und die Interaktion (Schlüssel-Schloss-Prinzip) von Enzymen und Substraten in Echtzeit.
 - **Michaelis-Menten-Graph**: Ein Live-Plot zeigt die gemessene Reaktionsgeschwindigkeit ($v_0$) über der anfänglichen Substratkonzentration ($[S]$). Referenzlinien für $V_{max}$ und $K_m$ werden dynamisch berechnet und eingezeichnet.
+- **Hemmstoffe (Inhibitoren)**: Simulation von kompetitiver und allosterischer Hemmung inklusive Auswirkungen auf $K_m$ und $V_{max}$.
 - **Temperaturkontrolle (0-100 °C)**: 
   - Die Bewegung der Teilchen skaliert realistisch nach der RGT-Regel.
   - Simulation von **Denaturierung** bei zu starker Erhitzung (Enzyme verlieren dauerhaft ihre Form und Funktion).
@@ -20,46 +19,34 @@ Das Projekt ist in **zwei Versionen** verfügbar:
 - **Theme-Unterstützung**: Nahtloser Wechsel zwischen zwei optischen Aufmachungen:
   - 🌙 **Dunkel**: Ein präzises "Labor-/Matrix-Neon"-Design.
   - 📄 **Hell**: Ein organischer "Papier & Skizzen"-Stil für einen handgezeichneten Look.
-- **Zoom & Sim-Speed**: Simulation kann beschleunigt, verlangsamt und für bessere Sichtbarkeit herangezoomt werden.
+- **Zoom & Sim-Speed**: Simulation kann beschleunigt, verlangsamt und für bessere Sichtbarkeit herangezoomt werden (Diagramm-Zoom per Klick).
 
 ---
 
-## 🚀 Installation & Nutzung
+## 🚀 Nutzung
 
-### 🐍 Python-Version (Desktop-App)
-Die Desktop-Anwendung benötigt lediglich eine Standard-Python-Installation (keine weiteren `pip`-Pakete erforderlich).
+Die Simulation benötigt keinen Webserver und keine Installation.
 
-1. Python 3.9+ wird empfohlen.
-2. Wechsle in das Verzeichnis.
-3. Führe das Skript aus:
-   ```bash
-   python3 enzym_simulation.py
-   ```
-
-### 🌐 Web-Version (Im Browser)
-Die Web-Version läuft vollständig lokal im Browser und benötigt keinen Backend-Server.
-
-1. Navigiere in den Ordner `webapp/`.
-2. Öffne die `index.html`-Datei einfach in einem beliebigen modernen Browser (Chrome, Firefox, Safari, Edge).
+1. Öffne die Datei `Enzym-Simulator.html` einfach in einem beliebigen modernen Browser (Chrome, Firefox, Safari, Edge).
+2. Alle Logiken (JS) und Designs (CSS) sind direkt in der Datei enthalten, sodass sie auch offline und ohne Internetverbindung funktioniert.
 
 ---
 
 ## 🧬 Physikalische & Biologische Hintergründe
 
 - **RGT-Regel (Reaktionsgeschwindigkeit-Temperatur-Regel)**: Angepasst an die klassische Lehrmeinung verdoppelt/halbiert sich die Reaktionsrate für jede 10°C Temperaturveränderung (bezogen auf Start-Temperatur 25°C).
-- **Enzym-Denaturierung**: Ab 50°C (bzw. 80°C bei thermostabilen Enzymen) beginnt eine strukturelle Verformung der Enzyme. Dies ist visuell durch eine Deformation des Graphen und rote Kreuze im Canvas deutlich maskiert. Solche Enzyme können keine Substrate mehr andocken ("Denaturierung").
-- **Substrathemmung**: Das Kinetik-Modell berücksichtigt subtil Substratübersättigung bei extrem hohen Konzentrationen, bei der sich Substrate gegenseitig beim Binden behindern können.
+- **Enzym-Denaturierung**: Ab 50°C (bzw. 80°C bei thermostabilen Enzymen) beginnt eine strukturelle Verformung der Enzyme. Dies ist visuell durch eine Deformation der Enzyme und rote Kreuze im Simulator deutlich markiert. Denaturierte Enzyme können keine Substrate mehr binden.
+- **Inhibition**:
+  - **Kompetitiv**: Hemmstoffe konkurrieren mit dem Substrat um das aktive Zentrum ($K_m$ erhöht sich).
+  - **Allosterisch**: Hemmstoffe binden an ein anderes Zentrum und verändern die Enzymstruktur ($V_{max}$ sinkt).
 
 ---
 
-## 🛠 Technologien & Libraries
+## 🛠 Technologien
 
-- **Python-App**: `tkinter`, `math`, `random`, `time` (alles Teil der Python Standard Library).
-- **Web-App**: Vanilla JavaScript (ES6+), Canvas API für hardwarebeschleunigtes 2D-Rendering, CSS Variablen zur dynamischen Theme-Steuerung.
+- **Web-App**: Vanilla JavaScript (ES6+), Canvas API für hardwarebeschleunigtes 2D-Rendering, CSS Variablen zur dynamischen Theme-Steuerung. Keine externen Libraries notwendig.
 
 ---
 
 ## 📝 Lizenz
-Dieses Projekt dient Bildungs- und Visualisierungszwecken. (MIT). 
-
-2026 von mp & Antigravity
+Dieses Projekt dient Bildungs- und Visualisierungszwecken. (Lizenz: MIT). 2026 von m.poehlmann mit Antigravity

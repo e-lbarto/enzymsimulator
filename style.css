@@ -18,6 +18,8 @@
     --enz-d-outline: #1f1510;
     --sub-color: #ffe000;
     --prod-color: #ff6600;
+    --inh-comp: #ff0000;
+    --inh-allo: #6a0dad;
     
     --grid-color: #092015;
     --graph-bg: #040810;
@@ -58,6 +60,8 @@ body.theme-paper {
     --enz-d-outline: #504030;
     --sub-color: #d4900a;
     --prod-color: #cc3300;
+    --inh-comp: #cc0000;
+    --inh-allo: #4b0082;
     
     --grid-color: #c8bfa0;
     --graph-bg: #faf6ec;
@@ -477,7 +481,7 @@ input[type=range]::-webkit-slider-thumb {
     line-height: 1.5;
     pointer-events: none;
     display: none;
-    z-index: 100;
+    z-index: 2000;
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     border-radius: 4px;
 }
@@ -489,4 +493,44 @@ input[type=range]::-webkit-slider-thumb {
 .mono-icon {
     color: transparent;
     text-shadow: 0 0 0 var(--accent-color);
+}
+
+.zoom-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.zoom-modal {
+    background: var(--panel-bg);
+    border: 2px solid var(--accent-color);
+    padding: 20px;
+    width: 1120px; /* 448px * 2.5 */
+    height: 625px; /* 250px * 2.5 */
+    max-width: 95vw;
+    max-height: 95vh;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.zoom-close {
+    position: absolute;
+    top: 10px; right: 15px;
+    background: transparent;
+    border: none;
+    color: var(--error-color);
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+#graphCanvas {
+    cursor: zoom-in;
 }
